@@ -64,40 +64,50 @@ async def handle_whatsapp_message(request: Request):
     data = await request.json()
     
     try:
-        # Check if the incoming data contains an actual text message
         entry = data['entry'][0]['changes'][0]['value']
         if 'messages' in entry:
             message = entry['messages'][0]
             sender_phone = message['from']
             msg_text = message['text']['body'].strip()
 
-            # --- CONVERSATION ROUTER ---
-            
-            # Step A: Check where the user currently is in the conversation (Default is 'start')
+            # Step A: Check where the user currently is in the conversation
             current_state = user_states.get(sender_phone, "start")
 
-            # Step B: If they say hello, or just started, show the main menu
+            # Step B: Show the main menu
             if current_state == "start" or msg_text.lower() in ["hello", "hi", "menu"]:
                 menu = (
                     "Welcome to *Superlender Pro*! 🚀\n\n"
                     "Please reply with a number to proceed:\n"
-                    "1️⃣ Apply for a Loan\n"
+                    "1️⃣ Apply for an Account\n"
                     "2️⃣ Check My Balance\n"
                     "3️⃣ Contact Support"
                 )
                 send_whatsapp_message(sender_phone, menu)
-                # Update their memory state so the bot knows they are looking at the menu
                 user_states[sender_phone] = "main_menu"
             
-            # Step C: If they are looking at the Main Menu, read the number they typed
+            # Step C: Read the menu selection
             elif current_state == "main_menu":
                 if msg_text == "1":
                     send_whatsapp_message(sender_phone, "Great! Let's get you registered.\n\nPlease reply with your *National ID Number*:")
                     user_states[sender_phone] = "applying_step_1"
                 
                 elif msg_text == "2":
-                    # Placeholder: We will wire this to the MySQL database later!
-                    send_whatsapp_message(sender_phone, "Your current balance is: *KES 0.00*.\n\nType 'Menu' to go back.")
+                    # --- CLOUD DATABASE FETCH ---
+                    user_profile = db_engine.get_user(sender_phone)
+                    
+                    if user_profile:
+                        balance = user_profile['balance']
+                        limit = user_profile['loan_limit']
+                        statement = (
+                            "📊 *Account Statement*\n\n"
+                            f"Current Loan Balance: *KES {balance}*\n"
+                            f"Available Limit: *KES {limit}*\n\n"
+                            "Type 'Menu' to go back."
+                        )
+                        send_whatsapp_message(sender_phone, statement)
+                    else:
+                        send_whatsapp_message(sender_phone, "⚠️ We couldn't find an account for this number. Please reply with 1 to Apply.")
+                    
                     user_states[sender_phone] = "start" 
                 
                 elif msg_text == "3":
@@ -105,13 +115,20 @@ async def handle_whatsapp_message(request: Request):
                     user_states[sender_phone] = "start"
                 
                 else:
-                    # If they type "4" or "Apple"
                     send_whatsapp_message(sender_phone, "⚠️ Invalid option. Please reply with 1, 2, or 3.")
                     
-            # Step D: If they selected Option 1, catch their ID Number
+            # Step D: Save to the Cloud Database
             elif current_state == "applying_step_1":
-                # Placeholder: We will save this ID to the database later!
-                send_whatsapp_message(sender_phone, f"Thank you. We have received ID: *{msg_text}*.\n\n(Database integration coming soon!).\nType 'Menu' to restart.")
+                # --- CLOUD DATABASE SAVE ---
+                db_engine.create_user(sender_phone, msg_text)
+                
+                success_msg = (
+                    "Account successfully created! ✅\n\n"
+                    f"Your National ID (*{msg_text}*) has been verified.\n"
+                    "You have been awarded a starting loan limit of *KES 500*.\n\n"
+                    "Type 'Menu' to go back and check your balance."
+                )
+                send_whatsapp_message(sender_phone, success_msg)
                 user_states[sender_phone] = "start"
 
         return {"status": "success"}
