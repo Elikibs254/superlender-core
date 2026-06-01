@@ -36,7 +36,7 @@ DARAJA_CONSUMER_KEY = os.getenv("DARAJA_CONSUMER_KEY")
 DARAJA_CONSUMER_SECRET = os.getenv("DARAJA_CONSUMER_SECRET")
 B2C_SECURITY_CREDENTIAL = os.getenv("B2C_SECURITY_CREDENTIAL")
 
-NGROK_URL = "https://constrain-take-property.ngrok-free.dev"
+NGROK_URL = "https://superlender-engine.onrender.com"
 user_states = {}
 
 # ==========================================
