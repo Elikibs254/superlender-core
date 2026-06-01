@@ -13,14 +13,14 @@ class SuperLenderEngine:
         # dictionary=True allows us to read rows cleanly like user['balance']
         self.cursor = self.connection.cursor(dictionary=True)
         
-        # Auto-build the tables if they don't exist yet
+        # Auto-build the new tables if they don't exist yet
         self._setup_tables()
         print("Successfully connected to the MySQL database engine!")
 
     def _setup_tables(self):
-        """Creates the borrowers table safely in the cloud."""
+        """Creates the customers table safely in the cloud."""
         table_sql = """
-        CREATE TABLE IF NOT EXISTS borrowers (
+        CREATE TABLE IF NOT EXISTS customers (
             phone_number VARCHAR(20) PRIMARY KEY,
             national_id VARCHAR(20) NOT NULL,
             loan_limit INT DEFAULT 500,
@@ -33,7 +33,7 @@ class SuperLenderEngine:
     def create_user(self, phone_number, national_id):
         """Saves a new user profile permanently to the cloud database."""
         sql = """
-        INSERT INTO borrowers (phone_number, national_id) 
+        INSERT INTO customers (phone_number, national_id) 
         VALUES (%s, %s) 
         ON DUPLICATE KEY UPDATE national_id = %s
         """
@@ -42,6 +42,6 @@ class SuperLenderEngine:
 
     def get_user(self, phone_number):
         """Fetches a specific user profile from the database."""
-        sql = "SELECT * FROM borrowers WHERE phone_number = %s"
+        sql = "SELECT * FROM customers WHERE phone_number = %s"
         self.cursor.execute(sql, (phone_number,))
         return self.cursor.fetchone()
