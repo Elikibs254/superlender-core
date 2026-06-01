@@ -65,3 +65,7 @@ class SuperLenderEngine:
             "total_limits": limits,
             "recent_customers": recent
         }
+    def delete_user(self, phone_number):
+        """Hard deletes a user from the MySQL database."""
+        self.cursor.execute("DELETE FROM customers WHERE phone_number = %s", (phone_number,))
+        self.connection.commit()

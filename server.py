@@ -263,11 +263,21 @@ async def serve_dashboard():
 async def get_metrics():
     return db_engine.get_dashboard_metrics()
 
+from fastapi import HTTPException
+
 # SECURE ADMIN ROUTE: Deletes a user via dashboard command
 @app.delete("/api/reset_user/{phone_number}")
 async def reset_user(phone_number: str):
     try:
+        # 1. Delete from MySQL
         db_engine.delete_user(phone_number)
+        
+        # 2. Delete from Bot RAM
+        if phone_number in user_states:
+            del user_states[phone_number]
+            
         return {"status": "success"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        # Force a real HTTP error so the browser actually alerts you
+        print(f"Delete Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
