@@ -3,6 +3,7 @@ import time
 import base64
 import requests
 from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from engine import SuperLenderEngine
 
@@ -210,3 +211,15 @@ async def b2c_result(request: Request):
 async def b2c_timeout(request: Request):
     """Safaricom tells us if the payment timed out."""
     return {"ResultCode": 0, "ResultDesc": "Success"}
+
+# --- DASHBOARD ENDPOINTS ---
+
+@app.get("/")
+async def serve_dashboard():
+    """Serves the visual HTML interface when you visit the main URL."""
+    return FileResponse("dashboard.html")
+
+@app.get("/api/metrics")
+async def get_metrics():
+    """Provides the live database numbers to the JavaScript frontend."""
+    return db_engine.get_dashboard_metrics()

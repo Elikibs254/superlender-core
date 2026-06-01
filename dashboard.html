@@ -3,121 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Superlender Pro | Admin Console</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Superlender | Command Center</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; color: #1f2937; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { color: #2563eb; font-size: 2.5rem; margin: 0; }
+        .grid { display: flex; gap: 20px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 250px; text-align: center; border-top: 4px solid #2563eb; }
+        .card h3 { margin: 0; font-size: 1rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+        .card p { font-size: 2.5rem; font-weight: bold; margin: 10px 0 0 0; color: #111827; }
+        .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 900px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid #e5e7eb; }
+        th { background-color: #f9fafb; color: #374151; font-weight: 600; }
+        .live-dot { height: 10px; width: 10px; background-color: #10b981; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen">
+<body>
 
-    <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center font-bold text-slate-900">SL</div>
-            <h1 class="text-xl font-bold tracking-tight">Superlender <span class="text-emerald-400 font-medium text-sm border border-emerald-500/30 rounded-full px-2 py-0.5 ml-2">Core MVP</span></h1>
+    <div class="header">
+        <h1><span class="live-dot"></span>Superlender Live Dashboard</h1>
+        <p>Real-time analytics and portfolio monitoring</p>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Total Users</h3>
+            <p id="total_users">0</p>
         </div>
-        <div class="flex items-center gap-4">
-            <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" id="status-dot"></span>
-            <span class="text-xs font-mono text-slate-400" id="system-status">Connecting to Backend...</span>
+        <div class="card">
+            <h3>Total Outstanding</h3>
+            <p id="total_loaned">KES 0</p>
         </div>
-    </header>
+        <div class="card">
+            <h3>Total Exposure</h3>
+            <p id="total_limits">KES 0</p>
+        </div>
+    </div>
 
-    <main class="max-w-7xl mx-auto p-6 space-y-8 mt-6">
-        
-        <section class="space-y-2">
-            <h2 class="text-3xl font-bold tracking-tight text-white">System Executive Summary</h2>
-            <p class="text-slate-400 max-w-2xl">Real-time portfolio performance, micro-liquidity tracking, and automated M-PESA escrow metrics.</p>
-        </section>
-
-        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4 shadow-lg">
-                <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Total Borrowers</p>
-                <div class="flex items-baseline justify-between">
-                    <span class="text-4xl font-extrabold tracking-tight text-white" id="metric-borrowers">-</span>
-                    <span class="text-xs bg-emerald-500/10 text-emerald-400 font-medium px-2 py-1 rounded">KYC Verified</span>
-                </div>
-            </div>
-
-            <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4 shadow-lg">
-                <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Active Loans</p>
-                <div class="flex items-baseline justify-between">
-                    <span class="text-4xl font-extrabold tracking-tight text-white" id="metric-active-loans">-</span>
-                    <span class="text-xs bg-blue-500/10 text-blue-400 font-medium px-2 py-1 rounded">Live Books</span>
-                </div>
-            </div>
-
-            <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4 shadow-lg">
-                <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Total Volume</p>
-                <div class="flex items-baseline justify-between">
-                    <span class="text-3xl font-extrabold tracking-tight text-white" id="metric-disbursed">KES -</span>
-                    <span class="text-xs bg-purple-500/10 text-purple-400 font-medium px-2 py-1 rounded">Gross</span>
-                </div>
-            </div>
-
-            <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4 shadow-lg">
-                <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Outstanding Debt</p>
-                <div class="flex items-baseline justify-between">
-                    <span class="text-3xl font-extrabold tracking-tight text-amber-400" id="metric-outstanding">KES -</span>
-                    <span class="text-xs bg-amber-500/10 text-amber-400 font-medium px-2 py-1 rounded">At Risk</span>
-                </div>
-            </div>
-
-        </section>
-
-        <section class="bg-slate-800/20 border border-slate-800 rounded-xl p-6 space-y-4 shadow-lg">
-            <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                <span>⚡</span> Real-Time API Connection Pipeline
-            </h3>
-            <div class="font-mono text-xs text-slate-400 space-y-2 bg-slate-950 p-4 rounded-lg border border-slate-800/60 h-40 overflow-y-auto" id="event-log">
-                <p class="text-slate-500">[SYSTEM] Initialization sequence complete. Target host: http://localhost:8000</p>
-            </div>
-        </section>
-
-    </main>
+    <div class="table-container">
+        <h2>Recent Customer Accounts</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Phone Number</th>
+                    <th>National ID</th>
+                    <th>Available Limit</th>
+                    <th>Current Balance</th>
+                </tr>
+            </thead>
+            <tbody id="customer_table">
+                </tbody>
+        </table>
+    </div>
 
     <script>
-        const logElement = document.getElementById('event-log');
-        const statusText = document.getElementById('system-status');
-        const statusDot = document.getElementById('status-dot');
-        
-        function logEvent(message) {
-            const timestamp = new Date().toLocaleTimeString();
-            const logLine = document.createElement('p');
-            logLine.innerHTML = `<span class="text-slate-600">[${timestamp}]</span> ${message}`;
-            logElement.appendChild(logLine);
-            logElement.scrollTop = logElement.scrollHeight; // Auto-scroll to bottom
-        }
-
+        // Fetch data from the Python server automatically
         async function fetchMetrics() {
             try {
-                // This asks Python for the data
-                const response = await fetch('http://localhost:8000/api/dashboard');
-                
-                if (!response.ok) throw new Error(`HTTP network error: ${response.status}`);
-                
+                const response = await fetch('/api/metrics');
                 const data = await response.json();
                 
-                if (data.error) {
-                    logEvent(`<span class="text-rose-400">API Error: ${data.error}</span>`);
-                    return;
-                }
+                document.getElementById('total_users').innerText = data.total_users;
+                document.getElementById('total_loaned').innerText = "KES " + data.total_loaned;
+                document.getElementById('total_limits').innerText = "KES " + data.total_limits;
 
-                // Inject the numbers into the HTML cards
-                document.getElementById('metric-borrowers').innerText = data.total_borrowers;
-                document.getElementById('metric-active-loans').innerText = data.active_loans_count;
-                document.getElementById('metric-disbursed').innerText = `KES ${data.total_disbursed.toLocaleString()}`;
-                document.getElementById('metric-outstanding').innerText = `KES ${data.outstanding_debt.toLocaleString()}`;
-                
-                statusText.innerText = `Node Active: ${data.system_status}`;
-                statusDot.classList.replace("bg-rose-500", "bg-emerald-400");
-                logEvent(`<span class="text-emerald-400">Sync Success:</span> Fetched active database metric matrices.`);
-                
-            } catch (err) {
-                statusText.innerText = "Node Offline (Check Python)";
-                statusDot.classList.replace("bg-emerald-400", "bg-rose-500");
-                logEvent(`<span class="text-rose-500">Pipeline Offline:</span> Unable to reach FastAPI backend. Is uvicorn running?`);
+                let tableHtml = "";
+                data.recent_customers.forEach(customer => {
+                    tableHtml += `
+                        <tr>
+                            <td>${customer.phone_number}</td>
+                            <td>${customer.national_id}</td>
+                            <td>KES ${customer.loan_limit}</td>
+                            <td style="color: ${customer.balance > 0 ? '#ef4444' : '#10b981'}; font-weight: bold;">KES ${customer.balance}</td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('customer_table').innerHTML = tableHtml;
+            } catch (error) {
+                console.error("Error fetching data:", error);
             }
         }
 
-        // Fetch data immediately, then repeat every 5 seconds (5000 milliseconds)
+        // Run immediately, then check for new data every 5 seconds
         fetchMetrics();
         setInterval(fetchMetrics, 5000);
     </script>

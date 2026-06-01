@@ -45,3 +45,23 @@ class SuperLenderEngine:
         sql = "SELECT * FROM customers WHERE phone_number = %s"
         self.cursor.execute(sql, (phone_number,))
         return self.cursor.fetchone()
+    def get_dashboard_metrics(self):
+        """Calculates real-time totals for the web dashboard."""
+        self.cursor.execute("SELECT COUNT(*) as total_users FROM customers")
+        users = self.cursor.fetchone()['total_users']
+        
+        self.cursor.execute("SELECT SUM(balance) as total_loaned FROM customers")
+        loaned = self.cursor.fetchone()['total_loaned'] or 0
+        
+        self.cursor.execute("SELECT SUM(loan_limit) as total_limits FROM customers")
+        limits = self.cursor.fetchone()['total_limits'] or 0
+        
+        self.cursor.execute("SELECT phone_number, national_id, balance, loan_limit FROM customers LIMIT 10")
+        recent = self.cursor.fetchall()
+        
+        return {
+            "total_users": users,
+            "total_loaned": loaned,
+            "total_limits": limits,
+            "recent_customers": recent
+        }
