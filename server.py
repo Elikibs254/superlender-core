@@ -138,6 +138,8 @@ async def handle_whatsapp_message(request: Request):
             message = entry['messages'][0]
             sender_phone = message['from']
             msg_text = message['text']['body'].strip()
+            
+            # The client-side admin command has been permanently removed from here.
             current_state = user_states.get(sender_phone, "start")
 
             if current_state == "start" or msg_text.lower() in ["hello", "hi", "menu"]:
@@ -160,7 +162,6 @@ async def handle_whatsapp_message(request: Request):
                 elif msg_text == "2":
                     user_profile = db_engine.get_user(sender_phone)
                     if user_profile:
-                        # HIDDEN LIMIT: We only show the outstanding balance to the client
                         statement = f"📊 *Account Statement*\n\nOutstanding Balance: *KES {user_profile['balance']}*\n\nType 'Menu' to go back."
                         send_whatsapp_message(sender_phone, statement)
                     else:
@@ -173,7 +174,6 @@ async def handle_whatsapp_message(request: Request):
                         send_whatsapp_message(sender_phone, "⚠️ You need an account first. Reply 1 to Apply.")
                     elif user_profile['balance'] > 0:
                         send_whatsapp_message(sender_phone, "⚠️ You have an outstanding loan. Please repay first.")
-                    # HIDDEN LIMIT CHECK: The bot enforces the limit secretly
                     elif user_profile['loan_limit'] < 500:
                         send_whatsapp_message(sender_phone, "⚠️ Your loan request could not be processed at this time. Please contact Boresha Cash support.")
                     else:
@@ -200,7 +200,6 @@ async def handle_whatsapp_message(request: Request):
                     
             elif current_state == "applying_step_1":
                 db_engine.create_user(sender_phone, msg_text)
-                # HIDDEN LIMIT: Removed the mention of the 500 starting limit
                 send_whatsapp_message(sender_phone, f"Account created! ✅\nNational ID *{msg_text}* verified.\n\nType 'Menu' to go back.")
                 user_states[sender_phone] = "start"
 
@@ -255,7 +254,7 @@ async def stk_callback(request: Request):
         
     return {"ResultCode": 0, "ResultDesc": "Success"}
 
-# --- DASHBOARD ENDPOINTS ---
+# --- DASHBOARD / ADMIN ENDPOINTS ---
 @app.get("/")
 async def serve_dashboard():
     return FileResponse("dashboard.html")
@@ -263,3 +262,12 @@ async def serve_dashboard():
 @app.get("/api/metrics")
 async def get_metrics():
     return db_engine.get_dashboard_metrics()
+
+# SECURE ADMIN ROUTE: Deletes a user via dashboard command
+@app.delete("/api/reset_user/{phone_number}")
+async def reset_user(phone_number: str):
+    try:
+        db_engine.delete_user(phone_number)
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

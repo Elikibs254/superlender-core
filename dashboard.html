@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Superlender | Command Center</title>
+    <title>Boresha Cash | Command Center</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; color: #1f2937; }
         .header { text-align: center; margin-bottom: 40px; }
@@ -12,17 +12,21 @@
         .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 250px; text-align: center; border-top: 4px solid #2563eb; }
         .card h3 { margin: 0; font-size: 1rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
         .card p { font-size: 2.5rem; font-weight: bold; margin: 10px 0 0 0; color: #111827; }
-        .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 900px; margin: 0 auto; }
+        .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 1000px; margin: 0 auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th, td { padding: 12px 15px; border-bottom: 1px solid #e5e7eb; }
         th { background-color: #f9fafb; color: #374151; font-weight: 600; }
         .live-dot { height: 10px; width: 10px; background-color: #10b981; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        
+        /* New styling for the Admin Reset Button */
+        .btn-delete { background-color: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: background 0.2s; }
+        .btn-delete:hover { background-color: #dc2626; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1><span class="live-dot"></span>Superlender Live Dashboard</h1>
+        <h1><span class="live-dot"></span>Boresha Cash Live Dashboard</h1>
         <p>Real-time analytics and portfolio monitoring</p>
     </div>
 
@@ -42,7 +46,7 @@
     </div>
 
     <div class="table-container">
-        <h2>Recent Customer Accounts</h2>
+        <h2>Customer Portfolio</h2>
         <table>
             <thead>
                 <tr>
@@ -50,6 +54,7 @@
                     <th>National ID</th>
                     <th>Available Limit</th>
                     <th>Current Balance</th>
+                    <th>Admin Actions</th>
                 </tr>
             </thead>
             <tbody id="customer_table">
@@ -70,18 +75,42 @@
 
                 let tableHtml = "";
                 data.recent_customers.forEach(customer => {
+                    // Injecting the new delete button into the table row
                     tableHtml += `
                         <tr>
                             <td>${customer.phone_number}</td>
                             <td>${customer.national_id}</td>
                             <td>KES ${customer.loan_limit}</td>
                             <td style="color: ${customer.balance > 0 ? '#ef4444' : '#10b981'}; font-weight: bold;">KES ${customer.balance}</td>
+                            <td>
+                                <button class="btn-delete" onclick="deleteUser('${customer.phone_number}')">Reset User</button>
+                            </td>
                         </tr>
                     `;
                 });
                 document.getElementById('customer_table').innerHTML = tableHtml;
             } catch (error) {
                 console.error("Error fetching data:", error);
+            }
+        }
+
+        // Secure delete function that talks to your backend API
+        async function deleteUser(phoneNumber) {
+            if (confirm("🚨 WARNING: Are you sure you want to completely erase this user and clear their debt? This action cannot be undone.")) {
+                try {
+                    const response = await fetch(`/api/reset_user/${phoneNumber}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        // Force an immediate refresh of the dashboard
+                        fetchMetrics();
+                    } else {
+                        alert("Failed to delete user from database.");
+                    }
+                } catch (error) {
+                    console.error("Error deleting user:", error);
+                }
             }
         }
 
