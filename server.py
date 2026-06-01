@@ -35,7 +35,7 @@ B2C_SECURITY_CREDENTIAL = os.getenv("B2C_SECURITY_CREDENTIAL")
 INITIATOR_NAME = "testapi"
 B2C_SHORTCODE = "600989" 
 
-# New STK Push (Express) Keys - Defaulting to Sandbox Paybill
+# STK Push (Express) Keys
 LIPA_NA_MPESA_SHORTCODE = os.getenv("LIPA_NA_MPESA_SHORTCODE", "174379")
 LIPA_NA_MPESA_PASSKEY = os.getenv("LIPA_NA_MPESA_PASSKEY", "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919")
 
@@ -82,7 +82,7 @@ def send_b2c_payment(phone_number, amount):
         "Amount": str(amount),
         "PartyA": B2C_SHORTCODE,
         "PartyB": formatted_phone,
-        "Remarks": "Superlender Loan",
+        "Remarks": "Boresha Cash Loan",
         "QueueTimeOutURL": f"{NGROK_URL}/b2c_timeout",
         "ResultURL": f"{NGROK_URL}/b2c_result",
         "Occasion": "Loan"
@@ -91,11 +91,9 @@ def send_b2c_payment(phone_number, amount):
     return response.status_code == 200
 
 def trigger_stk_push(phone_number, amount):
-    """Triggers the M-PESA PIN pop-up on the user's phone."""
     access_token = get_daraja_access_token()
     api_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
     
-    # Generate the dynamic base64 password
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     password_str = f"{LIPA_NA_MPESA_SHORTCODE}{LIPA_NA_MPESA_PASSKEY}{timestamp}"
     password = base64.b64encode(password_str.encode()).decode('utf-8')
@@ -115,7 +113,7 @@ def trigger_stk_push(phone_number, amount):
         "PartyB": LIPA_NA_MPESA_SHORTCODE,
         "PhoneNumber": formatted_phone,
         "CallBackURL": f"{NGROK_URL}/stk_callback",
-        "AccountReference": "Superlender",
+        "AccountReference": "Boresha Cash",
         "TransactionDesc": "Loan Repayment"
     }
     response = requests.post(api_url, json=payload, headers=headers)
@@ -144,7 +142,7 @@ async def handle_whatsapp_message(request: Request):
 
             if current_state == "start" or msg_text.lower() in ["hello", "hi", "menu"]:
                 menu = (
-                    "Welcome to *Superlender Pro*! 🚀\n\n"
+                    "Welcome to *Boresha Cash*! 🚀\n\n"
                     "Reply with a number:\n"
                     "1️⃣ Apply for an Account\n"
                     "2️⃣ Check My Balance\n"
@@ -162,7 +160,8 @@ async def handle_whatsapp_message(request: Request):
                 elif msg_text == "2":
                     user_profile = db_engine.get_user(sender_phone)
                     if user_profile:
-                        statement = f"📊 *Account Statement*\n\nBalance: *KES {user_profile['balance']}*\nLimit: *KES {user_profile['loan_limit']}*\n\nType 'Menu' to go back."
+                        # HIDDEN LIMIT: We only show the outstanding balance to the client
+                        statement = f"📊 *Account Statement*\n\nOutstanding Balance: *KES {user_profile['balance']}*\n\nType 'Menu' to go back."
                         send_whatsapp_message(sender_phone, statement)
                     else:
                         send_whatsapp_message(sender_phone, "⚠️ Account not found. Reply 1 to Apply.")
@@ -174,12 +173,15 @@ async def handle_whatsapp_message(request: Request):
                         send_whatsapp_message(sender_phone, "⚠️ You need an account first. Reply 1 to Apply.")
                     elif user_profile['balance'] > 0:
                         send_whatsapp_message(sender_phone, "⚠️ You have an outstanding loan. Please repay first.")
+                    # HIDDEN LIMIT CHECK: The bot enforces the limit secretly
+                    elif user_profile['loan_limit'] < 500:
+                        send_whatsapp_message(sender_phone, "⚠️ Your loan request could not be processed at this time. Please contact Boresha Cash support.")
                     else:
                         send_whatsapp_message(sender_phone, "⏳ Processing KES 500. Please wait...")
                         success = send_b2c_payment(sender_phone, 500)
                         if success:
                             send_whatsapp_message(sender_phone, "✅ Disbursement queued! You will receive an M-PESA text.")
-                            db_engine.cursor.execute("UPDATE customers SET balance = 500, loan_limit = 0 WHERE phone_number = %s", (sender_phone,))
+                            db_engine.cursor.execute("UPDATE customers SET balance = 500, loan_limit = loan_limit - 500 WHERE phone_number = %s", (sender_phone,))
                             db_engine.connection.commit()
                         else:
                             send_whatsapp_message(sender_phone, "❌ M-PESA failed. Try again later.")
@@ -198,7 +200,8 @@ async def handle_whatsapp_message(request: Request):
                     
             elif current_state == "applying_step_1":
                 db_engine.create_user(sender_phone, msg_text)
-                send_whatsapp_message(sender_phone, f"Account created! ✅\nID *{msg_text}* verified. Starting limit: *KES 500*.\nType 'Menu' to go back.")
+                # HIDDEN LIMIT: Removed the mention of the 500 starting limit
+                send_whatsapp_message(sender_phone, f"Account created! ✅\nNational ID *{msg_text}* verified.\n\nType 'Menu' to go back.")
                 user_states[sender_phone] = "start"
 
             elif current_state == "repaying_step_1":
@@ -228,20 +231,17 @@ async def b2c_timeout(request: Request):
 
 @app.post("/stk_callback")
 async def stk_callback(request: Request):
-    """Listens for Safaricom to confirm the user actually entered their PIN."""
     data = await request.json()
     print(f"STK Push Callback: {data}")
     try:
         body = data.get('Body', {}).get('stkCallback', {})
         result_code = body.get('ResultCode')
         
-        # 0 means the PIN was entered and payment succeeded
         if result_code == 0:
             metadata = body.get('CallbackMetadata', {}).get('Item', [])
             amount = next((item['Value'] for item in metadata if item['Name'] == 'Amount'), 0)
             phone = next((item['Value'] for item in metadata if item['Name'] == 'PhoneNumber'), "")
             
-            # Match the Daraja 254 phone back to our WhatsApp phone format and clear the debt
             db_phone = str(phone)
             db_engine.cursor.execute(
                 "UPDATE customers SET balance = balance - %s, loan_limit = loan_limit + %s WHERE phone_number LIKE %s", 
