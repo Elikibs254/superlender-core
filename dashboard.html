@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superlender Pro | Admin Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center font-bold text-slate-900">SL</div>
+            <h1 class="text-xl font-bold tracking-tight">Superlender <span class="text-emerald-400 font-medium text-sm border border-emerald-500/30 rounded-full px-2 py-0.5 ml-2">Core MVP</span></h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" id="status-dot"></span>
+            <span class="text-xs font-mono text-slate-400" id="system-status">Connecting to Backend...</span>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 space-y-8 mt-6">
+        
+        <section class="space-y-2">
+            <h2 class="text-3xl font-bold tracking-tight text-white">System Executive Summary</h2>
+            <p class="text-slate-400 max-w-2xl">Real-time portfolio performance, micro-liquidity tracking, and automated M-PESA escrow metrics.</p>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4 shadow-lg">
+                <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Total Borrowers</p>
+                <div class="flex items-baseline justify-between">
+                    <span class="text-4xl font-extrabold tracking-tight text-white" id="metric-borrowers">-</span>
+                    <span class="text-xs bg-emerald-500/10 text-emerald-400 font-medium px-2 py-1 rounded">KYC Verified</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4 shadow-lg">
+                <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Active Loans</p>
+                <div class="flex items-baseline justify-between">
+                    <span class="text-4xl font-extrabold tracking-tight text-white" id="metric-active-loans">-</span>
+                    <span class="text-xs bg-blue-500/10 text-blue-400 font-medium px-2 py-1 rounded">Live Books</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4 shadow-lg">
+                <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Total Volume</p>
+                <div class="flex items-baseline justify-between">
+                    <span class="text-3xl font-extrabold tracking-tight text-white" id="metric-disbursed">KES -</span>
+                    <span class="text-xs bg-purple-500/10 text-purple-400 font-medium px-2 py-1 rounded">Gross</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4 shadow-lg">
+                <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Outstanding Debt</p>
+                <div class="flex items-baseline justify-between">
+                    <span class="text-3xl font-extrabold tracking-tight text-amber-400" id="metric-outstanding">KES -</span>
+                    <span class="text-xs bg-amber-500/10 text-amber-400 font-medium px-2 py-1 rounded">At Risk</span>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="bg-slate-800/20 border border-slate-800 rounded-xl p-6 space-y-4 shadow-lg">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <span>⚡</span> Real-Time API Connection Pipeline
+            </h3>
+            <div class="font-mono text-xs text-slate-400 space-y-2 bg-slate-950 p-4 rounded-lg border border-slate-800/60 h-40 overflow-y-auto" id="event-log">
+                <p class="text-slate-500">[SYSTEM] Initialization sequence complete. Target host: http://localhost:8000</p>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const logElement = document.getElementById('event-log');
+        const statusText = document.getElementById('system-status');
+        const statusDot = document.getElementById('status-dot');
+        
+        function logEvent(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logLine = document.createElement('p');
+            logLine.innerHTML = `<span class="text-slate-600">[${timestamp}]</span> ${message}`;
+            logElement.appendChild(logLine);
+            logElement.scrollTop = logElement.scrollHeight; // Auto-scroll to bottom
+        }
+
+        async function fetchMetrics() {
+            try {
+                // This asks Python for the data
+                const response = await fetch('http://localhost:8000/api/dashboard');
+                
+                if (!response.ok) throw new Error(`HTTP network error: ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    logEvent(`<span class="text-rose-400">API Error: ${data.error}</span>`);
+                    return;
+                }
+
+                // Inject the numbers into the HTML cards
+                document.getElementById('metric-borrowers').innerText = data.total_borrowers;
+                document.getElementById('metric-active-loans').innerText = data.active_loans_count;
+                document.getElementById('metric-disbursed').innerText = `KES ${data.total_disbursed.toLocaleString()}`;
+                document.getElementById('metric-outstanding').innerText = `KES ${data.outstanding_debt.toLocaleString()}`;
+                
+                statusText.innerText = `Node Active: ${data.system_status}`;
+                statusDot.classList.replace("bg-rose-500", "bg-emerald-400");
+                logEvent(`<span class="text-emerald-400">Sync Success:</span> Fetched active database metric matrices.`);
+                
+            } catch (err) {
+                statusText.innerText = "Node Offline (Check Python)";
+                statusDot.classList.replace("bg-emerald-400", "bg-rose-500");
+                logEvent(`<span class="text-rose-500">Pipeline Offline:</span> Unable to reach FastAPI backend. Is uvicorn running?`);
+            }
+        }
+
+        // Fetch data immediately, then repeat every 5 seconds (5000 milliseconds)
+        fetchMetrics();
+        setInterval(fetchMetrics, 5000);
+    </script>
+</body>
+</html>
